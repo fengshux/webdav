@@ -29,5 +29,9 @@ fn init_config() -> Conf {
 
 fn main() {
     let config = init_config();
-    println!("{},{}", config.webdav.username, config.webdav.password);
+    let url = "https://dav.jianguoyun.com/dav/schedule";
+    let client = reqwest::blocking::Client::new();
+    let body = clent.request("PROPFIND",url).unwrap()
+        .text().unwrap();
+    println!("{}", body);
 }

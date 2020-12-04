@@ -10,4 +10,5 @@ edition = "2018"
 serde = "1.0.117"
 serde_derive = "1.0.117"
 toml = "0.5.7"
-hyperdav = "0.2.0"
+reqwest = { version = "0.10", features = ["blocking", "json"] }
+tokio = { version = "0.2", features = ["full"] }
