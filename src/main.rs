@@ -2,6 +2,7 @@
 extern crate serde_derive;
 extern crate toml;
 
+use serde_xml_rs::{from_str, to_string};
 use std::fs;
 use reqwest::Method;
 
@@ -50,6 +51,19 @@ impl Webdav {
 }
 
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Item {
+    name: String,
+    source: String,
+}
+
+fn xml() {
+    let src = r#"<Item><name>Banana</name><source>Store</source></Item>"#;
+
+    let item: Item = from_str(src).unwrap();
+    println!("{}",item)
+}
+ 
 
 fn main() {
     let config = init_config();
