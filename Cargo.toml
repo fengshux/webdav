@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 serde = "1.0.117"
 serde_derive = "1.0.117"
-serde-xml-rs = "0.4.0"
+quick-xml = { version = "0.17", features = [ "serialize" ] }
 toml = "0.5.7"
 reqwest = { version = "0.10", features = ["blocking", "json"] }
 tokio = { version = "0.2", features = ["full"] }

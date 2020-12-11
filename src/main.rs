@@ -3,7 +3,8 @@ extern crate serde_derive;
 extern crate toml;
 
 use reqwest::Method;
-use serde_xml_rs::from_str;
+use serde::Deserialize;
+use quick_xml::de::{from_str, DeError};
 use std::fs;
 
 #[derive(Deserialize, Debug)]
@@ -38,7 +39,7 @@ impl Webdav {
         }
     }
 
-    fn list(&self) {
+    fn list(&self) -> Box<Vec<Davfile>> {
         let url = &self.path;
         let client = reqwest::blocking::Client::new();
         let body = client
@@ -49,7 +50,29 @@ impl Webdav {
             .text()
             .unwrap();
         println!("{}", body);
+        let multistatus: Multistatus = from_str(&body).unwrap();
+        let mut files: Vec<Davfile> = Vec::new();
+
+        for response in multistatus {
+            files.
+        }
+
+        Box::new(files)
     }
+}
+
+struct Davfile {
+    path: String,
+    lastmodified: String,
+    contentlength: i64,
+    owner: String,
+    contenttype: String,
+    name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Multistatus {
+    response: Vec<Response>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,20 +83,29 @@ struct Response {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Propstat {
+    prop: Prop,
+    status: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Prop {
     getlastmodified: String,
     getcontentlength: i64,
     owner: String,
+    getcontenttype: String,
+    displayname: String,
 }
+
 
 fn xml() {
    
     let contents = fs::read_to_string("test.xml").expect("Something went wrong reading the file");
-    println!("{}",contents);
-    let multistatus: Vec<Response> = from_str(&contents).unwrap();
+    println!("{}", contents);
+    let multistatus: Multistatus = from_str(&contents).unwrap();
     println!("{:?}", multistatus);
 }
 
-fn main() 
+fn main() {
     // let config = init_config();
     // let dav = Webdav::new("https://dav.jianguoyun.com/dav/schedule/", config.webdav);
     // dav.list();
