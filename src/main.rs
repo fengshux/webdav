@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate serde_derive;
 extern crate toml;
+#[macro_use]
+extern crate log; 
 
 use reqwest::Method;
 use serde::Deserialize;
@@ -22,7 +24,7 @@ fn init_config() -> Conf {
     let config_path = "config.toml";
     let contents = fs::read_to_string(config_path).expect("Something went wrong reading the file");
     let config: Conf = toml::from_str(&contents).unwrap();
-    println!("{:?}", config);
+    debug!("{:?}", config);
     config
 }
 
@@ -49,18 +51,26 @@ impl Webdav {
             .unwrap()
             .text()
             .unwrap();
-        println!("{}", body);
+        debug!("{}", body);
         let multistatus: Multistatus = from_str(&body).unwrap();
         let mut files: Vec<Davfile> = Vec::new();
 
-        for response in multistatus {
-            files.
+        for response in multistatus.response {
+            let f = Davfile{
+                path: response.href,
+                lastmodified: response.propstat.prop.getlastmodified,
+                contentlength: response.propstat.prop.getcontentlength,                
+                owner: response.propstat.prop.owner,
+                contenttype:response.propstat.prop.getcontenttype,
+                name:response.propstat.prop.displayname,
+            };
+            files.push(f)
         }
-
         Box::new(files)
     }
 }
 
+#[derive(Debug)]
 struct Davfile {
     path: String,
     lastmodified: String,
@@ -96,19 +106,9 @@ struct Prop {
     displayname: String,
 }
 
-
-fn xml() {
-   
-    let contents = fs::read_to_string("test.xml").expect("Something went wrong reading the file");
-    println!("{}", contents);
-    let multistatus: Multistatus = from_str(&contents).unwrap();
-    println!("{:?}", multistatus);
-}
-
 fn main() {
-    // let config = init_config();
-    // let dav = Webdav::new("https://dav.jianguoyun.com/dav/schedule/", config.webdav);
-    // dav.list();
-
-    xml();
+    let config = init_config();
+    let dav = Webdav::new("https://dav.jianguoyun.com/dav/schedule/", config.webdav);
+    let res = dav.list();
+    info!("{:?}", res);
 }

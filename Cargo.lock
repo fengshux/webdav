@@ -1188,6 +1188,7 @@ dependencies = [
 name = "webdav"
 version = "0.1.0"
 dependencies = [
+ "log",
  "quick-xml",
  "reqwest",
  "serde",
