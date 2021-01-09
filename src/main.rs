@@ -56,23 +56,18 @@ impl Webdav {
         let mut files: Vec<Filestatus> = Vec::new();
 
         for response in multistatus.response {
-            // rfc1123
-            //Sat, 02 Jan 2021 04:59:35 GMT
-            //%a, %d %b %Y %T %Z
-            let modify = DateTime::parse_from_str(&response.propstat.prop.getlastmodified, "%a, %d %b %Y %T %Z");
-            if let Ok(modify_time) = modify {
-                let f = Filestatus{
-                    path: response.href,
-                    lastmodified: modify_time,
-                    contentlength: response.propstat.prop.getcontentlength,                
-                    owner: response.propstat.prop.owner,
-                    contenttype:response.propstat.prop.getcontenttype,
-                    name:response.propstat.prop.displayname,
-                };
-                files.push(f)                
-            } else {
-               panic!("covert date type failur")
-            }
+
+            let modify_time = DateTime::parse_from_rfc2822(&response.propstat.prop.getlastmodified).unwrap();
+            let f = Filestatus{
+                path: response.href,
+                lastmodified: modify_time.with_timezone(&Local),
+                contentlength: response.propstat.prop.getcontentlength,                
+                owner: response.propstat.prop.owner,
+                contenttype:response.propstat.prop.getcontenttype,
+                name:response.propstat.prop.displayname,
+            };
+            files.push(f)                
+
         }
         Box::new(files)
     }
@@ -81,8 +76,8 @@ impl Webdav {
 #[derive(Debug)]
 struct Filestatus {
     path: String,
-    lastmodified: DateTime<FixedOffset>,
-    contentlength: i64,
+    lastmodified: DateTime<Local>,
+    contentlength: u64,
     owner: String,
     contenttype: String,
     name: String,
@@ -108,7 +103,7 @@ struct Propstat {
 #[derive(Debug, Serialize, Deserialize)]
 struct Prop{
     getlastmodified: String,
-    getcontentlength: i64,
+    getcontentlength: u64,
     owner: String,
     getcontenttype: String,
     displayname: String,
@@ -119,28 +114,37 @@ struct Native {
 }
 
 impl Native {
-    fn list(self) {
+    fn list(self) -> Box<Vec<Filestatus>> {
+        let mut files: Vec<Filestatus> = Vec::new();
         match fs::read_dir(self.path) {
-            Ok(dir) => {
+            Ok(dir) => {                
                 for entry in dir {
                     if let Ok(entry) = entry {
                         // Here, `entry` is a `DirEntry`.
                         if let Ok(metadata) = entry.metadata() {
                             // Now let's show our entry's permissions!
-                            if let Ok(modified) = metadata.modified() {
-                                println!("{:?}: {:?}", entry.path(), modified);
-                            } else {
-                                println!("{:?} Could not get modified", entry.path());
-                            }
+                            let f = Filestatus{
+                                path: entry.path().to_str().unwrap().to_string(),
+                                lastmodified: DateTime::from(metadata.modified().unwrap()),
+                                contentlength: metadata.len(),
+                                owner: "".to_string(),
+                                contenttype: "".to_string(),
+                                name: entry.file_name().into_string().unwrap(),
+                            };
+
+                            files.push(f);
                             
                         } else {
                             println!("Couldn't get metadata for {:?}", entry.path());
                         }
                     }
-                }                                   
+
+                }
             },
             Err(e)  => println!("{}",e),
         }
+
+        Box::new(files)
     }
 }
 
@@ -155,6 +159,7 @@ fn main() {
     println!("{:?}", res);
 
     println!("======================= local ===========================");
-    let local = Native{path:"schedule".to_string()};
-    local.list();
+    let native = Native{path:"schedule".to_string()};
+    let locals = native.list();
+    println!("{:?}", locals);
 }
