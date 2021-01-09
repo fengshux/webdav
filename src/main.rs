@@ -8,6 +8,7 @@ use reqwest::Method;
 use serde::Deserialize;
 use quick_xml::de::{from_str, DeError};
 use std::fs;
+use chrono::prelude::*;
 
 #[derive(Deserialize, Debug)]
 struct Conf {
@@ -40,8 +41,7 @@ impl Webdav {
             account: account,
         }
     }
-
-    fn list(&self) -> Box<Vec<Davfile>> {
+    fn list(&self) -> Box<Vec<Filestatus>> {
         let url = &self.path;
         let client = reqwest::blocking::Client::new();
         let body = client
@@ -53,27 +53,35 @@ impl Webdav {
             .unwrap();
         debug!("{}", body);
         let multistatus: Multistatus = from_str(&body).unwrap();
-        let mut files: Vec<Davfile> = Vec::new();
+        let mut files: Vec<Filestatus> = Vec::new();
 
         for response in multistatus.response {
-            let f = Davfile{
-                path: response.href,
-                lastmodified: response.propstat.prop.getlastmodified,
-                contentlength: response.propstat.prop.getcontentlength,                
-                owner: response.propstat.prop.owner,
-                contenttype:response.propstat.prop.getcontenttype,
-                name:response.propstat.prop.displayname,
-            };
-            files.push(f)
+            // rfc1123
+            //Sat, 02 Jan 2021 04:59:35 GMT
+            //%a, %d %b %Y %T %Z
+            let modify = DateTime::parse_from_str(&response.propstat.prop.getlastmodified, "%a, %d %b %Y %T %Z");
+            if let Ok(modify_time) = modify {
+                let f = Filestatus{
+                    path: response.href,
+                    lastmodified: modify_time,
+                    contentlength: response.propstat.prop.getcontentlength,                
+                    owner: response.propstat.prop.owner,
+                    contenttype:response.propstat.prop.getcontenttype,
+                    name:response.propstat.prop.displayname,
+                };
+                files.push(f)                
+            } else {
+               panic!("covert date type failur")
+            }
         }
         Box::new(files)
     }
 }
 
 #[derive(Debug)]
-struct Davfile {
+struct Filestatus {
     path: String,
-    lastmodified: String,
+    lastmodified: DateTime<FixedOffset>,
     contentlength: i64,
     owner: String,
     contenttype: String,
@@ -98,7 +106,7 @@ struct Propstat {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Prop {
+struct Prop{
     getlastmodified: String,
     getcontentlength: i64,
     owner: String,
@@ -106,9 +114,47 @@ struct Prop {
     displayname: String,
 }
 
+struct Native {
+    path: String
+}
+
+impl Native {
+    fn list(self) {
+        match fs::read_dir(self.path) {
+            Ok(dir) => {
+                for entry in dir {
+                    if let Ok(entry) = entry {
+                        // Here, `entry` is a `DirEntry`.
+                        if let Ok(metadata) = entry.metadata() {
+                            // Now let's show our entry's permissions!
+                            if let Ok(modified) = metadata.modified() {
+                                println!("{:?}: {:?}", entry.path(), modified);
+                            } else {
+                                println!("{:?} Could not get modified", entry.path());
+                            }
+                            
+                        } else {
+                            println!("Couldn't get metadata for {:?}", entry.path());
+                        }
+                    }
+                }                                   
+            },
+            Err(e)  => println!("{}",e),
+        }
+    }
+}
+
+
+
 fn main() {
-    let config = init_config();
+   let config = init_config();
+
+    println!("======================= webdav ===========================");
     let dav = Webdav::new("https://dav.jianguoyun.com/dav/schedule/", config.webdav);
     let res = dav.list();
-    info!("{:?}", res);
+    println!("{:?}", res);
+
+    println!("======================= local ===========================");
+    let local = Native{path:"schedule".to_string()};
+    local.list();
 }

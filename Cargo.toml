@@ -14,3 +14,4 @@ quick-xml = { version = "0.17", features = [ "serialize" ] }
 toml = "0.5.7"
 reqwest = { version = "0.10", features = ["blocking", "json"] }
 tokio = { version = "0.2", features = ["full"] }
+chrono = { version = "0.4", features = ["serde", "rustc-serialize"] }
