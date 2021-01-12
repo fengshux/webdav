@@ -89,6 +89,15 @@ impl Webdav {
         }
         Box::new(files)
     }
+
+    pub fn put(&self, path: &str) -> Result<(), String> {
+        
+        
+        
+        
+        
+        Ok(())
+    }
 }
 
 
