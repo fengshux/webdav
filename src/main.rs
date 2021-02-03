@@ -30,11 +30,13 @@ fn main() {
 
     println!("======================= webdav ===========================");
     let dav = Webdav::new("https://dav.jianguoyun.com/dav/schedule/", config.webdav);
+    // dav.write("schedule.org");
     let res = dav.list();
     println!("{:?}", res);
 
-    println!("======================= local ===========================");
-    let native = Native::new("schedule");
-    let locals = native.list();
-    println!("{:?}", locals);
+    // println!("======================= local ===========================");
+    // let native = Native::new("schedule");
+    // let locals = native.list();
+    // println!("{:?}", locals);
+    
 }

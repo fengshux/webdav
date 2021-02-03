@@ -1,4 +1,4 @@
-use reqwest::Method;
+use reqwest::{Method, header};
 use quick_xml::de::{from_str};
 use std::fs;
 use chrono::prelude::*;
@@ -52,6 +52,7 @@ pub struct Webdav {
     account: Account,
 }
 
+// webdav 代表的是remote的实体
 impl Webdav {
     pub fn new(path: &str, account: Account) -> Self {
         Webdav {
@@ -69,7 +70,7 @@ impl Webdav {
             .unwrap()
             .text()
             .unwrap();
-        debug!("{}", body);
+        println!("{}", body);
         let multistatus: Multistatus = from_str(&body).unwrap();
         let mut files: Vec<Filestatus> = Vec::new();
 
@@ -88,6 +89,51 @@ impl Webdav {
 
         }
         Box::new(files)
+    }   
+
+    pub fn write(&self, file_name: &str) -> Result<(), String> {
+        let url = &self.path;
+        let client = reqwest::blocking::Client::new();
+        let body = client
+            .request(Method::PUT, &(url.to_string() + file_name))
+            .basic_auth(&self.account.username, Some(&self.account.password))
+            .body("the exact body that is sent")
+            .send()
+            .unwrap()
+            .text()
+            .unwrap();
+        println!("{}",body);
+        Ok(())
+    }
+
+    pub fn pro_patch(&self, file_name: String, prop: String, value: String ) -> Result<(), String> {
+
+        let content =r#"<?xml version="1.0"?>
+                        <d:propertyupdate xmlns:d="DAV:" xmlns:o="urn:schemas-microsoft-com:office:office">
+                          <d:set>
+                            <d:prop>
+                              <o:Author>Douglas Groncki</o:Author>
+                            </d:prop>
+                          </d:set>
+                        </d:propertyupdate>"#;
+
+        
+        let url = &self.path;
+        let client = reqwest::blocking::Client::new();
+        let mut headers = header::HeaderMap::new();
+        headers.insert(header::CONTENT_TYPE, "text/xml".parse().unwrap());
+        let body = client
+            .request(Method::from_bytes(b"PROPPATCH").unwrap(), url)
+            .basic_auth(&self.account.username, Some(&self.account.password))
+            .headers(headers)
+            .body("the exact body that is sent")
+            .send()
+            .unwrap()
+            .text()
+            .unwrap();
+        println!("{}", body);
+        
+        Ok(())
     }
 }
 
