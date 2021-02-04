@@ -3,11 +3,11 @@ extern crate serde_derive;
 extern crate toml;
 #[macro_use]
 extern crate log;
-
+extern crate use simple_logger;
 
 mod webdav;
 
-
+use simple_logger::SimpleLogger;
 use std::fs;
 use webdav::{Webdav, Native, Account};
 
@@ -26,7 +26,8 @@ fn init_config() -> Conf {
 }
 
 fn main() {
-   let config = init_config();
+    SimpleLogger::new().init().unwrap();
+    let config = init_config();
 
     println!("======================= webdav ===========================");
     let dav = Webdav::new("https://dav.jianguoyun.com/dav/schedule/", config.webdav);
