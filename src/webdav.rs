@@ -181,3 +181,14 @@ impl Native {
         Box::new(files)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pro_patch( ) {
+        assert!(true, "pro_patch works  incorrect!");
+    }
+}
